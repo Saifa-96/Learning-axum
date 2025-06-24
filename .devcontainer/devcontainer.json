@@ -1,0 +1,16 @@
+{
+    "name": "Backend",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "dev",
+    "workspaceFolder": "/workspace/backend",
+    "forwardPorts": [3000],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "streetsidesoftware.code-spell-checker",
+                "rust-lang.rust-analyzer",
+                "fill-labs.dependi"
+            ]
+        }
+    }
+}
