@@ -1,8 +1,9 @@
 use std::net::SocketAddr;
 
 use anyhow::Ok;
-use axum::Router;
+use axum::{Router, extract::Request};
 use tokio::net::TcpListener;
+use tower_http::trace::{DefaultOnResponse, OnFailure, TraceLayer};
 
 use super::config::server::ServerConfig;
 use crate::app::AppState;
@@ -30,6 +31,16 @@ impl Server {
     }
 
     fn build_router(&self, state: AppState, router: Router<AppState>) -> Router {
-        Router::new().merge(router).with_state(state)
+        let tracing = TraceLayer::new_for_http()
+            .make_span_with(|request: &Request| {
+                let method = request.method();
+                let path = request.uri().path();
+                let id = xid::new();
+                tracing::info_span!("Api request", id = %id, method = %method, uri = %path)
+            })
+            .on_request(())
+            .on_failure(())
+            .on_response(DefaultOnResponse::new().level(tracing::Level::INFO));
+        Router::new().merge(router).layer(tracing).with_state(state)
     }
 }

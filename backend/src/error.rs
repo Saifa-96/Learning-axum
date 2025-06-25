@@ -1,7 +1,16 @@
-use axum::{http::StatusCode, response::{IntoResponse, Response}};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+
+use crate::response::ApiResponse;
+
+pub type ApiResult<T> = Result<T, ApiError>;
 
 #[derive(Debug, thiserror::Error)]
-pub enum AppError {
+pub enum ApiError {
+    #[error("Method not allowed")]
+    MethodNotAllowed,
     #[error("Not Found")]
     NotFound,
     #[error("Bad Request: {0}")]
@@ -10,18 +19,21 @@ pub enum AppError {
     Internal(#[from] anyhow::Error),
 }
 
-impl AppError {
+impl ApiError {
     pub fn status_code(&self) -> StatusCode {
         match self {
-            AppError::NotFound => StatusCode::NOT_FOUND,
-            AppError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Biz(_) => StatusCode::OK,
+            ApiError::NotFound => StatusCode::NOT_FOUND,
+            ApiError::MethodNotAllowed => StatusCode::METHOD_NOT_ALLOWED,
+            ApiError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::Biz(_) => StatusCode::OK,
         }
     }
 }
 
-impl IntoResponse for AppError {
+impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let status_code = self.status_code();
+        let body = axum::Json(ApiResponse::<()>::err(self.to_string()));
+        (status_code, body).into_response()
     }
 }
